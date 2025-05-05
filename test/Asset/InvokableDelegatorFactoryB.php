@@ -8,12 +8,12 @@
 
 declare(strict_types=1);
 
-namespace pine3ree\test\Mezzio\Container\Pimple\Asset;
+namespace pine3ree\test\Mezzio\Pimple\Asset;
 
 use Psr\Container\ContainerInterface;
 
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Invokable;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Delegator;
+use pine3ree\test\Mezzio\Pimple\Asset\Invokable;
+use pine3ree\test\Mezzio\Pimple\Asset\Delegator;
 
 class InvokableDelegatorFactoryB
 {

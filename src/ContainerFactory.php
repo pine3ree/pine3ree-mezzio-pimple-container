@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace pine3ree\Mezzio\Container\Pimple;
+namespace pine3ree\Mezzio\Pimple;
 
 use Pimple\Container as PimpleContainer;
 use Pimple\Exception\ExpectedInvokableException;

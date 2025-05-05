@@ -9,21 +9,21 @@
 
 declare(strict_types=1);
 
-namespace pine3ree\test\Mezzio\Container\Pimple;
+namespace pine3ree\test\Mezzio\Pimple;
 
 use PHPUnit\Framework\TestCase;
 use Pimple\Exception\ExpectedInvokableException;
 use Psr\Container\ContainerInterface;
-use pine3ree\Mezzio\Container\Pimple\ContainerFactory;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\DelegatorFactory;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Dependency;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Extension;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Factory;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Invokable;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\InvokableDelegatorFactoryA;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\InvokableDelegatorFactoryB;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\NonInvokableFactory;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Service;
+use pine3ree\Mezzio\Pimple\ContainerFactory;
+use pine3ree\test\Mezzio\Pimple\Asset\DelegatorFactory;
+use pine3ree\test\Mezzio\Pimple\Asset\Dependency;
+use pine3ree\test\Mezzio\Pimple\Asset\Extension;
+use pine3ree\test\Mezzio\Pimple\Asset\Factory;
+use pine3ree\test\Mezzio\Pimple\Asset\Invokable;
+use pine3ree\test\Mezzio\Pimple\Asset\InvokableDelegatorFactoryA;
+use pine3ree\test\Mezzio\Pimple\Asset\InvokableDelegatorFactoryB;
+use pine3ree\test\Mezzio\Pimple\Asset\NonInvokableFactory;
+use pine3ree\test\Mezzio\Pimple\Asset\Service;
 
 
 class ContainerFactoryTest extends TestCase

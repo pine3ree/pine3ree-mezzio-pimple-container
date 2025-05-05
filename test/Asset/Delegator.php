@@ -6,9 +6,9 @@
  * @author     pine3ree https://github.com/pine3ree
  */
 
-namespace pine3ree\test\Mezzio\Container\Pimple\Asset;
+namespace pine3ree\test\Mezzio\Pimple\Asset;
 
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Service;
+use pine3ree\test\Mezzio\Pimple\Asset\Service;
 
 /**
  * Class Delegator

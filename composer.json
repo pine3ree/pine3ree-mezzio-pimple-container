@@ -45,12 +45,12 @@
     },
     "autoload": {
         "psr-4": {
-            "pine3ree\\Mezzio\\Container\\Pimple\\": "src/"
+            "pine3ree\\Mezzio\\Pimple\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "pine3ree\\test\\Mezzio\\Container\\Pimple\\": "test/"
+            "pine3ree\\test\\Mezzio\\Pimple\\": "test/"
         }
     },
     "scripts": {

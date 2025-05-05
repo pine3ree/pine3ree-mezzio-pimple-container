@@ -8,7 +8,7 @@
 
 declare(strict_types=1);
 
-namespace pine3ree\test\Mezzio\Container\Pimple\Asset;
+namespace pine3ree\test\Mezzio\Pimple\Asset;
 
 class Invokable
 {

@@ -6,12 +6,12 @@
  * @author     pine3ree https://github.com/pine3ree
  */
 
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Delegator;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\DelegatorFactory;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Dependency;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Factory;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Invokable;
-use pine3ree\test\Mezzio\Container\Pimple\Asset\Service;
+use pine3ree\test\Mezzio\Pimple\Asset\Delegator;
+use pine3ree\test\Mezzio\Pimple\Asset\DelegatorFactory;
+use pine3ree\test\Mezzio\Pimple\Asset\Dependency;
+use pine3ree\test\Mezzio\Pimple\Asset\Factory;
+use pine3ree\test\Mezzio\Pimple\Asset\Invokable;
+use pine3ree\test\Mezzio\Pimple\Asset\Service;
 
 return [
     'dependencies' => [
