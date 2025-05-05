@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @package    pine3ree-mezzio-pimple-container
+ * @subpackage pine3ree-mezzio-pimple-container-test
+ * @author     pine3ree https://github.com/pine3ree
+ * @author     Laminas Project a Series of LF Projects, LLC. (Original library)
+ */
+
 declare(strict_types=1);
 
 namespace pine3ree\Mezzio\Container\Pimple;
@@ -23,7 +30,7 @@ class ContainerFactory
     private array $config;
     private array $dependencies = [];
 
-    private bool $sharedByDefault = true;
+    private bool $shared_by_default = true;
 
     public function __construct(array $config)
     {
@@ -32,9 +39,9 @@ class ContainerFactory
         $dependencies = $config['dependencies'] ?? null;
         if (isset($dependencies) && is_array($dependencies)) {
             $this->dependencies = $dependencies;
-            $sharedByDefault = $dependencies['shared_by_default'] ?? null;
-            if (is_bool($sharedByDefault)) {
-                $this->sharedByDefault = $sharedByDefault;
+            $shared_by_default  = $dependencies['shared_by_default'] ?? null;
+            if (is_bool($shared_by_default)) {
+                $this->shared_by_default = $shared_by_default;
             }
         }
     }
@@ -64,7 +71,7 @@ class ContainerFactory
         }
 
         foreach ($services as $name => $service) {
-            $pimple[$name] = $pimple->protect($service);
+            $pimple[$name] = fn() => $service;
         }
     }
 
@@ -77,42 +84,23 @@ class ContainerFactory
         }
 
         foreach ($factories as $name => $factory) {
-            $callback = function (PimpleContainer $pimple) use ($container, $factory, $name) {
+            $callback = function (PimpleContainer $pimple) use (
+                $container,
+                $factory,
+                $name
+            ) {
                 if (!is_callable($factory)) {
-                    $factory = $this->getCallableInstance('factory', $factory, $pimple, $name);
+                    $factory = $this->getInvokableInstance('factory', $factory, $pimple, $name);
                 }
-//                if (is_callable($factory)) {
-//                    return $factory($container, $name);
-//                }
-//
-//                if (!is_string($factory) || !class_exists($factory)) {
-//                    throw new ExpectedInvokableException(
-//                        "The factory class provided to initialize service `{$name}` does not exist"
-//                    );
-//                }
-//
-//                $factoryClass = $factory;
-//                $factory = $pimple[$factoryClass] ?? new $factoryClass();
-//                if (!is_callable($factory)) {
-//                    throw new ExpectedInvokableException(
-//                        "The factory class `{$factoryClass}` provided to initialize service `{$name}` is not callable"
-//                    );
-//                }
-//
-//                // Store the callable factory instance into the container (protecting it)
-//                if (!$pimple->offsetExists($factoryClass)) {
-//                    $pimple[$factoryClass] = $pimple->protect($factory);
-//                }
-
                 return $factory($container, $name);
             };
 
             $delegators = $this->dependencies['delegators'][$name] ?? null;
 
-            if (!empty($delegators)) {
-                $this->injectDelegators($pimple, $container, $delegators, $name, $callback);
-            } else {
+            if (empty($delegators)) {
                 $this->setService($pimple, $name, $callback);
+            } else {
+                $this->setServiceWithDelegators($pimple, $delegators, $container, $name, fn() => $callback($pimple));
             }
         }
     }
@@ -132,16 +120,15 @@ class ContainerFactory
                         "The invokable service class `{$fqcn}` does not exist"
                     );
                 }
-
                 return new $fqcn();
             };
 
             $delegators = $this->dependencies['delegators'][$fqcn] ?? null;
 
-            if (!empty($delegators)) {
-                $this->injectDelegators($pimple, $container, $delegators, $fqcn, $callback);
-            } else {
+            if (empty($delegators)) {
                 $this->setService($pimple, $fqcn, $callback);
+            } else {
+                $this->setServiceWithDelegators($pimple, $delegators, $container, $fqcn, fn() => $callback($pimple));
             }
 
             if (is_string($alias) && $alias !== $fqcn) {
@@ -173,18 +160,20 @@ class ContainerFactory
 
         foreach ($extensions as $name => $extensions) {
             foreach ($extensions as $extension) {
-                $pimple->extend($name, function ($service, PimpleContainer $pimple) use (
-                    $container,
-                    $extension,
-                    $name
-                ) {
-                    if (!is_callable($extension)) {
-                        $extension = $this->getCallableInstance('extension', $extension, $pimple, $name);
+                $pimple->extend(
+                    $name,
+                    function ($service, PimpleContainer $pimple) use (
+                        $container,
+                        $extension,
+                        $name
+                    ) {
+                        if (!is_callable($extension)) {
+                            $extension = $this->getInvokableInstance('extension', $extension, $pimple, $name);
+                        }
+                        // Passing extra parameter service $name
+                        return $extension($service, $container, $name);
                     }
-//                    $factory = $pimple[$extension] ?? new $extension();
-                    // Passing extra parameter service $name
-                    return $factory($service, $container, $name);
-                });
+                );
             }
         }
     }
@@ -193,52 +182,27 @@ class ContainerFactory
      * Delegator factory __invoke method signature;
      * public function MyDelegatorFactory::__invoke(ContainerInterface $container, string $name, callable $callback);
      */
-    private function injectDelegators(
+    private function setServiceWithDelegators(
         PimpleContainer $pimple,
-        ContainerInterface $container,
         array $delegators,
+        ContainerInterface $container,
         string $name,
         callable $callback
     ) {
-        $pimple[$name] = function (PimpleContainer $pimple) use (
+        $this->setService($pimple, $name, function (PimpleContainer $pimple) use (
+            $delegators,
             $container,
             $name,
-            $callback,
-            $delegators
+            $callback
         ) {
-            foreach ($delegators as $delegator) {
-                if (!is_callable($delegator)) {
-                    $delegator = $this->getCallableInstance('delegator', $delegator, $pimple, $name);
+            foreach ($delegators as $delegatorFactory) {
+                if (!is_callable($delegatorFactory)) {
+                    $delegatorFactory = $this->getInvokableInstance('delegator', $delegatorFactory, $pimple, $name);
                 }
-//                if (is_callable($delegator)) {
-//                    $callback = fn() => $delegator($container, $name, $callback);
-//                    continue;
-//                }
-//
-//                if (!is_string($delegator) || !class_exists($delegator)) {
-//                    throw new ExpectedInvokableException(
-//                        "A delegator factory must be a valid class name"
-//                    );
-//                }
-//
-//                $delegatorClass = $delegator;
-//                $delegator = $pimple[$delegatorClass] ?? new $delegatorClass();
-//                if (!is_callable($delegator)) {
-//                    throw new ExpectedInvokableException(
-//                        "The delegator class `{$delegatorClass}` provided to initialize service `{$name}` is not callable"
-//                    );
-//                }
-//
-//                // Store the callable delegator instance into the container (protecting it)
-//                if (!$pimple->offsetExists($delegatorClass)) {
-//                    $pimple[$delegatorClass] = $pimple->protect($delegator);
-//                }
-
-                $callback = fn() => $delegator($container, $name, $callback);
+                $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
-
             return $callback();
-        };
+        });
     }
 
     private function setService(PimpleContainer $pimple, string $name, callable $callback)
@@ -248,45 +212,60 @@ class ContainerFactory
 
     private function setAlias(PimpleContainer $pimple, string $alias, string $name)
     {
-        $pimple[$alias] = fn() => $pimple->offsetGet($name);
+        $shared = $this->dependencies['shared'][$alias] ?? null;
+
+        $callback = function (PimpleContainer $pimple) use ($alias, $name, $shared) {
+            $service = $pimple->offsetGet($name);
+            if ($shared === false) {
+                return $this->isShared($name) ? clone $service : $service;
+            }
+            return $service;
+        };
+
+        $pimple[$alias] = $shared === true ? $callback : $pimple->factory($callback);
     }
 
     private function isShared(string $name): bool
     {
         $shared = $this->dependencies['shared'][$name] ?? null;
 
-        if ($this->sharedByDefault && $shared === null) {
-            return true;
+        if ($shared === null) {
+            return $this->shared_by_default;
         }
 
         return $shared === true;
     }
 
-    private function getCallableInstance(string $type, $objectOrClass, PimpleContainer $pimple, string $name): object
+    private function getInvokableInstance(string $type, string $class, PimpleContainer $pimple, string $name): object
     {
-//        if (is_object($objectOrClass) && is_callable($objectOrClass)) {
-//            return $objectOrClass;
-//        }
-//
-        if (!is_string($objectOrClass) || !class_exists($objectOrClass)) {
+        if (!class_exists($class)) {
             throw new ExpectedInvokableException(
-                "The {$type} class provided to initialize service `{$name}` does not exist"
+                "The {$type} class `{$class}` provided to initialize service `{$name}` does not exist"
             );
         }
 
-        $class  = $objectOrClass;
-        $object = $pimple[$class] ?? new $class();
-        if (!is_callable($object)) {
+        if ($pimple->offsetExists($class)) {
+            $callable = $pimple->offsetGet($class);
+            if (!is_object($callable)) {
+                throw new ExpectedInvokableException(
+                    "The {$type} service class `{$class}` did not return an object from the container"
+                );
+            }
+        } else {
+            $callable = new $class();
+        }
+
+        if (!is_callable($callable)) {
             throw new ExpectedInvokableException(
                 "The {$type} class `{$class}` provided to initialize service `{$name}` is not callable"
             );
         }
 
-        // Store the callable delegator instance into the container (protecting it)
+        // Store the callable delegator instance into the container and protect it as callback
         if (!$pimple->offsetExists($class)) {
-            $pimple[$class] = $pimple->protect($object);
+            $pimple[$class] = $pimple->protect($callable);
         }
 
-        return $object;
+        return $callable;
     }
 }
