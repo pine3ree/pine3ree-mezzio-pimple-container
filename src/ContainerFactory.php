@@ -19,6 +19,7 @@ use function class_exists;
 use function is_array;
 use function is_bool;
 use function is_callable;
+use function is_object;
 use function is_string;
 
 /**
