@@ -31,4 +31,5 @@ return [
             'invokable' => Invokable::class,
         ],
     ],
+    'theAnswer' => 42,
 ];

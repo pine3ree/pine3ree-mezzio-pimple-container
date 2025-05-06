@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace pine3ree\test\Mezzio\Pimple;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Pimple\Exception\ExpectedInvokableException;
 use Psr\Container\ContainerInterface;
@@ -33,20 +34,69 @@ class ContainerFactoryTest extends TestCase
         parent::setUp();
     }
 
-    public function testFactoryCreatesPsr11Container()
+    public function testFactoryRaisesExceptionIfNoDependency()
     {
-        $container = $this->createContainer([]);
+        $this->expectException(\Throwable::class);
+        $this->createContainerByConfig(['dependencies' => []]);
+    }
+
+    public function testFactoryCreatesPsr11ContainerWithDependencies()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(ContainerInterface::class, $container);
     }
 
-    public function testThatInvokables()
+    public function testInjectedObjectServices()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['services']['now'] = new DateTimeImmutable();
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertInstanceOf(DateTimeImmutable::class, $container->get('now'));
+    }
+
+    public function testInjectedNonObjectServices()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['services']['answer'] = 42;
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertEquals(42, $container->get('answer'));
+    }
+
+    public function testNoServices()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['services'] = [];
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertFalse($container->has('date'));
+    }
+
+    public function testInvokables()
     {
         $config = include __DIR__ . '/config/config.php';
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(Dependency::class, $container->get(Dependency::Class));
+    }
+
+    public function testNoInvokables()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['invokables'] = [];
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertFalse($container->has(Invokable::class));
+        self::assertFalse($container->has(Dependency::class));
+        self::assertFalse($container->has('dependency'));
     }
 
     public function testThatInvokablesWithNonExistingClassesRaiseExceptions()
@@ -60,7 +110,7 @@ class ContainerFactoryTest extends TestCase
             ],
         ]);
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         $this->expectException(ExpectedInvokableException::class);
         $container->get(NonExistentClass::class);
@@ -70,17 +120,28 @@ class ContainerFactoryTest extends TestCase
     {
         $config = include __DIR__ . '/config/config.php';
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(Service::class, $container->get(Service::Class));
     }
 
-    public function testFactoriesAlsoServices()
+    public function testNoFactories()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['factories'] = [];
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertFalse($container->has(Service::class));
+        self::assertFalse($container->has(Delegator::class));
+    }
+
+    public function testFactoriesThatAreAlsoRegisteredServices()
     {
         $config = include __DIR__ . '/config/config.php';
         $config['dependencies']['invokables'][Factory::class] = Factory::class;
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(Service::class, $container->get(Service::Class));
     }
@@ -90,7 +151,7 @@ class ContainerFactoryTest extends TestCase
         $config = include __DIR__ . '/config/config.php';
         $config['dependencies']['factories'][Service::class] = NonExistentFactory::class;
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         $this->expectException(ExpectedInvokableException::class);
         self::assertInstanceOf(Service::class, $container->get(Service::Class));
@@ -101,7 +162,7 @@ class ContainerFactoryTest extends TestCase
         $config = include __DIR__ . '/config/config.php';
         $config['dependencies']['factories'][Service::class] = NonInvokableFactory::class;
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
          $this->expectException(ExpectedInvokableException::class);
         self::assertInstanceOf(Service::class, $container->get(Service::Class));
@@ -120,7 +181,7 @@ class ContainerFactoryTest extends TestCase
             ],
         ]);
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
         $service   = $container->get(Service::Class);
 
         self::assertIsInt($service->getNumber());
@@ -139,7 +200,7 @@ class ContainerFactoryTest extends TestCase
             ],
         ]);
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
         $service   = $container->get(Service::Class);
 
         self::assertGreaterThan(Dependency::MAX, $service->getRandomNumber());
@@ -159,7 +220,7 @@ class ContainerFactoryTest extends TestCase
             ],
         ]);
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
         $invokableService = $container->get(Invokable::Class);
 
         self::assertEquals(InvokableDelegatorFactoryA::class, $invokableService->getProperty('A'));
@@ -170,18 +231,45 @@ class ContainerFactoryTest extends TestCase
     {
         $config = include __DIR__ . '/config/config.php';
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(Dependency::class, $container->get('dependency'));
         self::assertInstanceOf(Service::class, $container->get('service'));
     }
 
-    public function testNonSharedByDefault()
+    public function testNoAliases()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['aliases'] = [];
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertFalse($container->has('invokable'));
+        self::assertFalse($container->has('service'));
+    }
+
+    public function testIsSharedByDefaultIfNotSet()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['shared_by_default'] = 123;
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertInstanceOf(Dependency::class, $dep1 = $container->get(Dependency::class));
+        self::assertInstanceOf(Dependency::class, $dep2 = $container->get(Dependency::class));
+        self::assertSame($dep1, $dep2);
+
+        self::assertInstanceOf(Dependency::class, $dep1 = $container->get('dependency'));
+        self::assertInstanceOf(Dependency::class, $dep2 = $container->get('dependency'));
+        self::assertSame($dep1, $dep2);
+    }
+
+    public function testWhenNonSharedByDefault()
     {
         $config = include __DIR__ . '/config/config.php';
         $config['dependencies']['shared_by_default'] = false;
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(Dependency::class, $dep1 = $container->get(Dependency::class));
         self::assertInstanceOf(Dependency::class, $dep2 = $container->get(Dependency::class));
@@ -199,7 +287,7 @@ class ContainerFactoryTest extends TestCase
         $config['dependencies']['shared'][Invokable::class] = true;
         $config['dependencies']['shared']['invokable'] = false;
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(Invokable::class, $inv1 = $container->get(Invokable::class));
         self::assertInstanceOf(Invokable::class, $inv2 = $container->get(Invokable::class));
@@ -217,7 +305,7 @@ class ContainerFactoryTest extends TestCase
         $config['dependencies']['shared'][Invokable::class] = false;
         $config['dependencies']['shared']['invokable'] = true;
 
-        $container = $this->createContainer($config);
+        $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(Invokable::class, $inv1 = $container->get(Invokable::class));
         self::assertInstanceOf(Invokable::class, $inv2 = $container->get(Invokable::class));
@@ -228,9 +316,23 @@ class ContainerFactoryTest extends TestCase
         self::assertSame($inv1, $inv2);
     }
 
-    private function createContainer(array $config)
+    public function testConfigurationService()
     {
-        $factory = new ContainerFactory($config);
-        return $factory();
+        $config = include __DIR__ . '/config/config.php';
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertTrue($container->has('config'));
+
+        $config = $container->get('config');
+        self::assertIsArray($config);
+
+        self::assertEquals(42, $config['theAnswer'] ?? null);
+    }
+
+    private function createContainerByConfig(array $config): ContainerInterface
+    {
+        $factory = new ContainerFactory();
+        return $factory($config['dependencies'], $config);
     }
 }
