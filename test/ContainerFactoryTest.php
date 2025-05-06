@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Pimple\Exception\ExpectedInvokableException;
 use Psr\Container\ContainerInterface;
 use pine3ree\Mezzio\Pimple\ContainerFactory;
+use pine3ree\Mezzio\Pimple\Exception\EmptyConfigurationException;
 use pine3ree\test\Mezzio\Pimple\Asset\DelegatorFactory;
 use pine3ree\test\Mezzio\Pimple\Asset\Dependency;
 use pine3ree\test\Mezzio\Pimple\Asset\Extension;
@@ -37,7 +38,7 @@ class ContainerFactoryTest extends TestCase
 
     public function testFactoryRaisesExceptionIfNoDependency()
     {
-        $this->expectException(\Throwable::class);
+        $this->expectException(EmptyConfigurationException::class);
         $this->createContainerByConfig(['dependencies' => []]);
     }
 

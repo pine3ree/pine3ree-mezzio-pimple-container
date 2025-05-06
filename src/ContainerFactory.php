@@ -14,6 +14,7 @@ use Pimple\Container as PimpleContainer;
 use Pimple\Exception\ExpectedInvokableException;
 use Pimple\Psr11\Container as PsrContainer;
 use Psr\Container\ContainerInterface;
+use pine3ree\Mezzio\Pimple\Exception\EmptyConfigurationException;
 
 use function class_exists;
 use function get_class;
@@ -45,8 +46,8 @@ class ContainerFactory
                 && empty($dependencies['factories'])
             )
         ) {
-            throw new \InvalidArgumentException(
-                "Unable to provide a container without any dependency"
+            throw new EmptyConfigurationException(
+                "Unable to provide a container without defining at least one dependency"
             );
         }
 
