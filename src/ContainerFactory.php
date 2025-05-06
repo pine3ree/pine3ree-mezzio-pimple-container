@@ -170,7 +170,10 @@ class ContainerFactory
 
         foreach ($extensions as $name => $extensions) {
             foreach ($extensions as $extension) {
-                $pimple->extend($name, function ($service, PimpleContainer $pimple) use (
+                $pimple->extend($name, function (
+                    $service,
+                    PimpleContainer $pimple
+                ) use (
                     $container,
                     $extension,
                     $name

@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace pine3ree\test\Mezzio\Pimple;
 
+use function array_merge_recursive;
+
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Pimple\Exception\ExpectedInvokableException;
@@ -25,7 +27,6 @@ use pine3ree\test\Mezzio\Pimple\Asset\InvokableDelegatorFactoryA;
 use pine3ree\test\Mezzio\Pimple\Asset\InvokableDelegatorFactoryB;
 use pine3ree\test\Mezzio\Pimple\Asset\NonInvokableFactory;
 use pine3ree\test\Mezzio\Pimple\Asset\Service;
-
 
 class ContainerFactoryTest extends TestCase
 {
