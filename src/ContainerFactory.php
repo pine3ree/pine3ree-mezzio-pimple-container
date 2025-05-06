@@ -295,7 +295,7 @@ class ContainerFactory
     private function getInvokableInstance(PimpleContainer $pimple, string $type, $objectOrClass, string $name)
     {
         if (is_object($objectOrClass)) {
-            $callable = $objectOrClass;
+            $invokable = $objectOrClass;
             $class = get_class($objectOrClass);
         } else {
             if (!is_string($objectOrClass)) {
@@ -310,18 +310,18 @@ class ContainerFactory
                 );
             }
             if ($pimple->offsetExists($class)) {
-                $callable = $pimple->offsetGet($class);
-                if (!is_object($callable)) {
+                $invokable = $pimple->offsetGet($class);
+                if (!is_object($invokable)) {
                     throw new ExpectedInvokableException(
                         "The {$type} service class `{$class}` did not return an object from the container"
                     );
                 }
             } else {
-                $callable = new $class();
+                $invokable = new $class();
             }
         }
 
-        if (!is_callable($callable)) {
+        if (!is_callable($invokable)) {
             throw new ExpectedInvokableException(
                 "The {$type} class `{$class}` provided to initialize service `{$name}` is not callable"
             );
@@ -329,9 +329,9 @@ class ContainerFactory
 
         // Store the callable delegator instance into the container and protect it as callback
         if (!$pimple->offsetExists($class)) {
-            $pimple[$class] = $pimple->protect($callable);
+            $pimple[$class] = $pimple->protect($invokable);
         }
 
-        return $callable;
+        return $invokable;
     }
 }
