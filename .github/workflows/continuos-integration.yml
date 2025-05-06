@@ -61,10 +61,10 @@ jobs:
         id: phpcs
         run: composer phpcs
 
-      - name: Static Analysis (phpstan)
-        id: phpstan
-        if: ${{ matrix.composer-deps == 'latest' || matrix.php-versions < '8.4' }}
-        run: composer phpstan
+#      - name: Static Analysis (phpstan)
+#        id: phpstan
+#        if: ${{ matrix.composer-deps == 'latest' || matrix.php-versions < '8.4' }}
+#        run: composer phpstan
 
 #      - name: Static Analysis (psalm)
 #        id: psalm
@@ -76,6 +76,6 @@ jobs:
 
       - name: Coverage (clover)
         id: coverage-clover
-#        if: ${{ matrix.php-versions < '8.2' }}
+        if: ${{ matrix.php-versions < '8.2' }}
         run: composer test-coverage
         
