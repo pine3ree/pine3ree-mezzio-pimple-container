@@ -54,7 +54,7 @@ jobs:
 
       - name: Update Composer dependencies to latest
         id: composer-update-latest
-        if: ${{ matrix.composer-deps == 'latest' }}
+#        if: ${{ matrix.composer-deps == 'latest' }}
         run: composer update ${{ env.COMPOSER_ARGS }} --prefer-stable
 
       - name: Code Style check (phpcs)
@@ -63,7 +63,7 @@ jobs:
 
       - name: Static Analysis (phpstan)
         id: phpstan
-#        if: ${{ matrix.composer-deps == 'latest' || matrix.php-versions < '8.4' }}
+        if: ${{ matrix.composer-deps == 'latest' }}
         run: composer phpstan
 
 #      - name: Static Analysis (psalm)
