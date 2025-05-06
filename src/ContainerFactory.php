@@ -300,7 +300,7 @@ class ContainerFactory
         } else {
             if (!is_string($objectOrClass)) {
                 throw new ExpectedInvokableException(
-                    "The argument provided must be a callable object instanxe or class"
+                    "The argument provided must be a callable object instance or class"
                 );
             }
             $class = $objectOrClass;
