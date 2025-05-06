@@ -105,9 +105,7 @@ class ContainerFactory
                 $factory,
                 $name
             ) {
-                if (is_string($factory) || !is_callable($factory)) {
-                    $factory = $this->getInvokableInstance($pimple, 'factory', $factory, $name);
-                }
+                $factory = $this->getInvokableFactoryInstance($pimple, 'factory', $factory, $name);
                 return $factory($container, $name);
             };
 
@@ -195,11 +193,9 @@ class ContainerFactory
                     $extension,
                     $name
                 ) {
-                    if (is_string($extension) || !is_callable($extension)) {
-                        $extension = $this->getInvokableInstance($pimple, 'extension', $extension, $name);
-                    }
+                    $extensionFactory = $this->getInvokableFactoryInstance($pimple, 'extension', $extension, $name);
                     // Passing extra parameter service $name
-                    return $extension($service, $container, $name);
+                    return $extensionFactory($service, $container, $name);
                 });
             }
         }
@@ -227,10 +223,8 @@ class ContainerFactory
             $name,
             $callback
         ) {
-            foreach ($delegators as $delegatorFactory) {
-                if (is_string($delegatorFactory) || !is_callable($delegatorFactory)) {
-                    $delegatorFactory = $this->getInvokableInstance($pimple, 'delegator', $delegatorFactory, $name);
-                }
+            foreach ($delegators as $delegator) {
+                $delegatorFactory = $this->getInvokableFactoryInstance($pimple, 'delegator', $delegator, $name);
                 $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
             return $callback();
@@ -288,11 +282,13 @@ class ContainerFactory
     }
 
     /**
-     * @param class-string|callable|mixed $objectOrClass
+     * Validate an invokable-factory instance or class
+     *
+     * @param class-string|callable|object|mixed $objectOrClass
      * @return callable
      * @throws ExpectedInvokableException
      */
-    private function getInvokableInstance(PimpleContainer $pimple, string $type, $objectOrClass, string $name)
+    private function getInvokableFactoryInstance(PimpleContainer $pimple, string $type, $objectOrClass, string $name)
     {
         if (is_object($objectOrClass)) {
             $invokable = $objectOrClass;

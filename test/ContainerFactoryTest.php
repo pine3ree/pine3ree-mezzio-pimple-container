@@ -148,10 +148,33 @@ class ContainerFactoryTest extends TestCase
         self::assertInstanceOf(Service::class, $container->get(Service::Class));
     }
 
-    public function testThatInvalidFactoryRaisesException()
+    public function testInvokableFactories()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['factories']['datetime'] = fn() => new DateTimeImmutable();
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertInstanceOf(DateTimeImmutable::class, $datetime1 = $container->get('datetime'));
+        self::assertInstanceOf(DateTimeImmutable::class, $datetime2 = $container->get('datetime'));
+        self::assertSame($datetime1, $datetime2);
+    }
+
+    public function testThatNonExistentFactoryRaisesException()
     {
         $config = include __DIR__ . '/config/config.php';
         $config['dependencies']['factories'][Service::class] = NonExistentFactory::class;
+
+        $container = $this->createContainerByConfig($config);
+
+        $this->expectException(ExpectedInvokableException::class);
+        self::assertInstanceOf(Service::class, $container->get(Service::Class));
+    }
+
+    public function testThatInvalidFactoryTypeRaisesException()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['factories'][Service::class] = 123;
 
         $container = $this->createContainerByConfig($config);
 
