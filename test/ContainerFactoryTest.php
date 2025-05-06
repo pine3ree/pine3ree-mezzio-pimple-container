@@ -324,8 +324,8 @@ class ContainerFactoryTest extends TestCase
 
         self::assertTrue($container->has('config'));
 
-        $config = $container->get('config');
-        self::assertIsArray($config);
+        self::assertIsArray($container->get('config'));
+        self::assertSame($config, $container->get('config'));
 
         self::assertEquals(42, $config['theAnswer'] ?? null);
     }
