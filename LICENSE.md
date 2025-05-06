@@ -1,7 +1,7 @@
 BSD 3-Clause License
 
-Copyright (c) 2020 Laminas Project a Series of LF Projects, LLC. (Original library)
-Copyright (c) 2025, pine3ree
+Copyright (c) 2025 pine3ree (library customization)
+Copyright (c) 2020 Laminas Project a Series of LF Projects, LLC. (Original library: laminas-pimple-config)
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
