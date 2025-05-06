@@ -1,6 +1,6 @@
 {
     "name": "pine3ree/pine3ree-mezzio-pimple-container",
-    "description": "Pimple psr-container factory for mezzio",
+    "description": "Pimple psr-container factory for Mezzio",
     "type": "library",
     "keywords": [
         "pine3ree",
