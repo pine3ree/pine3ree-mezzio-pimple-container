@@ -214,7 +214,7 @@ class ContainerFactory
                     $extension,
                     $name
                 ) {
-                    $extensionFactory = $this->getFactory($extension, 'extension', $name, $pimple);
+                    $extensionFactory = $this->getFactory($extension, 'extension-factory', $name, $pimple);
                     // Passing extra parameter service $name
                     return $extensionFactory($service, $container, $name);
                 });
@@ -247,7 +247,7 @@ class ContainerFactory
             $callback
         ) {
             foreach ($delegators as $delegator) {
-                $delegatorFactory = $this->getFactory($delegator, 'delegator', $name, $pimple);
+                $delegatorFactory = $this->getFactory($delegator, 'delegator-factory', $name, $pimple);
                 $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
             return $callback();
