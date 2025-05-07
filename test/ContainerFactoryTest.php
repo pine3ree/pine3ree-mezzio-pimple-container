@@ -341,6 +341,19 @@ class ContainerFactoryTest extends TestCase
         self::assertSame($inv1, $inv2);
     }
 
+    public function testNonSharedInjectedCallableService()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['services']['callback'] = fn() => 42;
+
+        $container = $this->createContainerByConfig($config);
+
+        $callback = $container->get('callback');
+
+        self::assertIsCallable($callback);
+        self::assertSame(42, $callback());
+    }
+
     public function testConfigurationService()
     {
         $config = include __DIR__ . '/config/config.php';
