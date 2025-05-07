@@ -225,6 +225,7 @@ class ContainerFactory
         array $delegators,
         array $dependencies
     ): void {
+        // We use a closure without the "pimple-container" parameter as done above
         $callback = function () use (
             $delegators,
             $container,
@@ -257,6 +258,7 @@ class ContainerFactory
         $shared_alias   = $dependencies['shared'][$alias] ?? null;
         $shared_service = $this->isShared($name, $dependencies);
 
+        // We use a closure without the "pimple-container" parameter as done above
         $callback = function () use (
             $pimple,
             $name,
