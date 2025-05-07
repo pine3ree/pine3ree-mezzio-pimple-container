@@ -54,41 +54,26 @@ class ContainerFactory
         $container = new Container();
         $container->offsetSet('config', $config ?? []);
 
-        $services = $dependencies['services'] ?? null;
-        if (!empty($services) && is_array($services)) {
-            $this->injectServices($container, $services, $dependencies);
-        }
-
-        $factories = $dependencies['factories'] ?? null;
-        if (!empty($factories) && is_array($factories)) {
-            $this->injectFactories($container, $factories, $dependencies);
-        }
-
-        $invokables = $dependencies['invokables'] ?? null;
-        if (!empty($invokables) && is_array($invokables)) {
-            $this->injectInvokables($container, $dependencies);
-        }
-
-        $aliases = $dependencies['aliases'] ?? null;
-        if (!empty($aliases) && is_array($aliases)) {
-            $this->injectAliases($container, $aliases, $dependencies);
-        }
-
-        $extensions = $dependencies['extensions'] ?? null;
-        if (!empty($extensions) && is_array($extensions)) {
-            $this->injectExtensions($container, $extensions, $dependencies);
-        }
-
+        $this->injectServices($container, $dependencies);
+        $this->injectFactories($container, $dependencies);
+        $this->injectInvokables($container, $dependencies);
+        $this->injectAliases($container, $dependencies);
+        $this->injectExtensions($container, $dependencies);
 
         return $container;
     }
 
     /**
-     * @param array<string|int, mixed> $services
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectServices(Container $container, array $services, array $dependencies): void
+    private function injectServices(Container $container, array $dependencies): void
     {
+        $services = $dependencies['services'] ?? null;
+
+        if (empty($services) || !is_array($services)) {
+            return;
+        }
+
         foreach ($services as $name => $service) {
             if (is_object($service)) {
                 if ($this->isShared($name, $dependencies)) {
@@ -105,11 +90,16 @@ class ContainerFactory
     }
 
     /**
-     * @param array<string, mixed> $factories
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectFactories(Container $container, array $factories, array $dependencies): void
+    private function injectFactories(Container $container, array $dependencies): void
     {
+        $factories = $dependencies['factories'] ?? null;
+
+        if (empty($factories) || !is_array($factories)) {
+            return;
+        }
+
         foreach ($factories as $name => $factory) {
             $callback = function () use (
                 $container,
@@ -133,8 +123,14 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectInvokables(Container $container, array $invokables, array $dependencies): void
+    private function injectInvokables(Container $container, array $dependencies): void
     {
+        $invokables = $dependencies['invokables'] ?? null;
+
+        if (empty($invokables) || !is_array($invokables)) {
+            return;
+        }
+
         foreach ($invokables as $alias => $fqcn) {
             $callback = function () use (
                 $fqcn
@@ -164,8 +160,14 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectAliases(Container $container, array $aliases, array $dependencies): void
+    private function injectAliases(Container $container, array $dependencies): void
     {
+        $aliases = $dependencies['aliases'] ?? null;
+
+        if (empty($aliases) || !is_array($aliases)) {
+            return;
+        }
+
         foreach ($aliases as $alias => $name) {
             $this->setAlias($container, $dependencies, $alias, $name);
         }
@@ -174,8 +176,14 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectExtensions(ContainerInterface $container, array $extensions, array $dependencies): void
+    private function injectExtensions(ContainerInterface $container, array $dependencies): void
     {
+        $extensions = $dependencies['extensions'] ?? null;
+
+        if (empty($extensions) || !is_array($extensions)) {
+            return;
+        }
+
         foreach ($extensions as $name => $extensions) {
             foreach ($extensions as $extension) {
                 $container->extend($name, function (
