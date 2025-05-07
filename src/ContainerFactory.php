@@ -215,7 +215,7 @@ class ContainerFactory
     }
 
     /**
-     * Delegator factory __invoke method signature;
+     * Delegator factory __invoke method signature:
      * public function MyDelegatorFactory::__invoke(ContainerInterface $container, string $name, callable $callback);
      *
      * @param callable $callback The callback returning the original service or
