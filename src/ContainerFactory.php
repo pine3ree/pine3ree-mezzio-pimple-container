@@ -57,7 +57,7 @@ class ContainerFactory
         $pimple->offsetSet('config', $config ?? []);
         $pimple->offsetSet(ContainerInterface::class, fn(PimpleContainer $c) => new PsrContainer($c));
 
-        /** @var ContainerInterface $container Fetched from pimple so that it is marked as frozen */
+        /** @var ContainerInterface $container Fetched from pimple so that it gets marked as frozen */
         $container = $pimple->offsetGet(ContainerInterface::class);
 
         $this->injectServices($pimple, $dependencies);
@@ -111,7 +111,7 @@ class ContainerFactory
         $container = $pimple->offsetGet(ContainerInterface::class);
 
         foreach ($factories as $name => $factory) {
-            // Use pimple closure signature
+            // Use pimple service-definition closure signature
             $closure = function (PimpleContainer $c) use (
                 $container,
                 $factory,
@@ -146,7 +146,8 @@ class ContainerFactory
         }
 
         foreach ($invokables as $alias => $fqcn) {
-            // Use pimple closure signature even if container is unused here
+            // Use pimple service-definition closure signature even if container
+            // is not used for "invokable" services
             $closure = function (PimpleContainer $c) use (
                 $fqcn
             ) {
@@ -238,6 +239,7 @@ class ContainerFactory
         array $delegators,
         array $dependencies
     ): void {
+        // Use pimple service-definition closure signature
         $closure = function (PimpleContainer $c) use (
             $delegators,
             $name,
@@ -270,6 +272,7 @@ class ContainerFactory
         $shared_alias   = $dependencies['shared'][$alias] ?? null;
         $shared_service = $this->isShared($name, $dependencies);
 
+        // Use pimple service-definition closure signature
         $closure = function (PimpleContainer $c) use (
             $name,
             $shared_alias,
