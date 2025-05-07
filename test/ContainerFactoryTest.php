@@ -70,6 +70,19 @@ class ContainerFactoryTest extends TestCase
         self::assertEquals(42, $container->get('answer'));
     }
 
+    public function testInjectedCallableService()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['services']['callback'] = fn() => 42;
+
+        $container = $this->createContainerByConfig($config);
+
+        $callback = $container->get('callback');
+
+        self::assertIsCallable($callback);
+        self::assertSame(42, $callback());
+    }
+
     public function testNoServices()
     {
         $config = include __DIR__ . '/config/config.php';
@@ -339,19 +352,6 @@ class ContainerFactoryTest extends TestCase
         self::assertInstanceOf(Invokable::class, $inv1 = $container->get('invokable'));
         self::assertInstanceOf(Invokable::class, $inv2 = $container->get('invokable'));
         self::assertSame($inv1, $inv2);
-    }
-
-    public function testNonSharedInjectedCallableService()
-    {
-        $config = include __DIR__ . '/config/config.php';
-        $config['dependencies']['services']['callback'] = fn() => 42;
-
-        $container = $this->createContainerByConfig($config);
-
-        $callback = $container->get('callback');
-
-        self::assertIsCallable($callback);
-        self::assertSame(42, $callback());
     }
 
     public function testConfigurationService()
