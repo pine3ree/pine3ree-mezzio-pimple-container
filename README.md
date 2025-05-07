@@ -67,7 +67,8 @@ $container = $factory($config['dependencies'], $config);
 
 The `dependencies` array can contain the following keys:
 
-- `services`: an associative array that maps a key to a specific service instance.
+- `services`: an associative array that maps a key to a specific service instance
+  (or pimple parameter value)
 
 - `invokables`: an associative array that map a key to a constructor-less
   service class; i.e., for services that do not require arguments to the
