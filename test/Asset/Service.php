@@ -12,7 +12,7 @@ use pine3ree\test\Mezzio\Pimple\Asset\Dependency;
 
 class Service
 {
-    private Dependency $dependency;
+    private ?Dependency $dependency = null;
     private ?int $number = null;
 
     public function __construct(Dependency $dependency = null)
