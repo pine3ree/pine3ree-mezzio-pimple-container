@@ -94,8 +94,11 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectFactories(PimpleContainer $pimple, ContainerInterface $container, array $dependencies): void
-    {
+    private function injectFactories(
+        PimpleContainer $pimple,
+        ContainerInterface $container,
+        array $dependencies
+    ): void {
         $factories = $dependencies['factories'] ?? null;
 
         if (empty($factories) || !is_array($factories)) {
@@ -126,8 +129,11 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectInvokables(PimpleContainer $pimple, ContainerInterface $container, array $dependencies): void
-    {
+    private function injectInvokables(
+        PimpleContainer $pimple,
+        ContainerInterface $container,
+        array $dependencies
+    ): void {
         $invokables = $dependencies['invokables'] ?? null;
 
         if (empty($invokables) || !is_array($invokables)) {
@@ -179,8 +185,11 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectExtensions(PimpleContainer $pimple, ContainerInterface $container, array $dependencies): void
-    {
+    private function injectExtensions(
+        PimpleContainer $pimple,
+        ContainerInterface $container,
+        array $dependencies
+    ): void {
         $extensions = $dependencies['extensions'] ?? null;
 
         if (empty($extensions) || !is_array($extensions)) {
