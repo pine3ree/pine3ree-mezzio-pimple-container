@@ -8,38 +8,28 @@
 namespace pine3ree\Mezzio\Pimple;
 
 use Pimple\Container as PimpleContainer;
-use Pimple\Exception\UnknownIdentifierException;
 use Psr\Container\ContainerInterface;
-use pine3ree\Mezzio\Pimple\Exception\NotFoundException;
 
 /**
- * A PSR-11 compliant container "decorating" a Pimple container
+ * A PSR-11 compliant container extending a Pimple container
  */
-final class Container implements ContainerInterface
+final class Container extends PimpleContainer implements ContainerInterface
 {
-    private PimpleContainer $pimple;
-
-    public function __construct(PimpleContainer $pimple)
+    /**
+     * Disable passing services at constructor
+     */
+    public function __construct()
     {
-        $this->pimple = $pimple;
+        parent::__construct([]);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @throws NotFoundException
-     */
     public function get(string $id)
     {
-        try {
-            return $this->pimple->offsetGet($id);
-        } catch (UnknownIdentifierException $ex) {
-            throw new NotFoundException($ex->getMessage(), $ex->getCode());
-        }
+        return $this->offsetGet($id);
     }
 
     public function has(string $id): bool
     {
-        return $this->pimple->offsetExists($id);
+        return $this->offsetExists($id);
     }
 }
