@@ -116,9 +116,9 @@ class ContainerFactory
             $delegators = $dependencies['delegators'][$name] ?? null;
 
             if (empty($delegators)) {
-                $this->setService($pimple, $dependencies, $name, $callback);
+                $this->setService($pimple, $name, $callback, $dependencies);
             } elseif (is_array($delegators)) {
-                $this->setServiceWithDelegators($pimple, $dependencies, $delegators, $container, $name, $callback);
+                $this->setServiceWithDelegators($pimple, $container, $name, $callback, $delegators, $dependencies);
             }
         }
     }
@@ -149,13 +149,13 @@ class ContainerFactory
             $delegators = $dependencies['delegators'][$fqcn] ?? null;
 
             if (empty($delegators)) {
-                $this->setService($pimple, $dependencies, $fqcn, $callback);
+                $this->setService($pimple, $fqcn, $callback, $dependencies);
             } elseif (is_array($delegators)) {
-                $this->setServiceWithDelegators($pimple, $dependencies, $delegators, $container, $fqcn, $callback);
+                $this->setServiceWithDelegators($pimple, $container, $fqcn, $callback, $delegators, $dependencies);
             }
 
             if (is_string($alias) && $alias !== $fqcn) {
-                $this->setAlias($pimple, $dependencies, $alias, $fqcn);
+                $this->setAlias($pimple, $alias, $fqcn, $dependencies);
             }
         }
     }
@@ -172,7 +172,7 @@ class ContainerFactory
         }
 
         foreach ($aliases as $alias => $name) {
-            $this->setAlias($pimple, $dependencies, $alias, $name);
+            $this->setAlias($pimple, $alias, $name, $dependencies);
         }
     }
 
@@ -209,20 +209,20 @@ class ContainerFactory
      * Delegator factory __invoke method signature;
      * public function MyDelegatorFactory::__invoke(ContainerInterface $container, string $name, callable $callback);
      *
-     * @param array<string, array<string|int, mixed>> $dependencies
-     * @param array<string, array<int, string|object>> $delegators
-     * @param callable $callback The callback returnig the original service or
+     * @param callable $callback The callback returning the original service or
      *      previouse delegator. It must not have any parameters defined.
+     * @param array<string, array<int, string|object>> $delegators
+     * @param array<string, array<string|int, mixed>> $dependencies
      */
     private function setServiceWithDelegators(
         PimpleContainer $pimple,
-        array $dependencies,
-        array $delegators,
         ContainerInterface $container,
         string $name,
-        callable $callback
+        callable $callback,
+        array $delegators,
+        array $dependencies
     ): void {
-        $this->setService($pimple, $dependencies, $name, function () use (
+        $callback = function () use (
             $pimple,
             $delegators,
             $container,
@@ -234,13 +234,15 @@ class ContainerFactory
                 $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
             return $callback();
-        });
+        };
+
+        $this->setService($pimple, $name, $callback, $dependencies);
     }
 
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function setService(PimpleContainer $pimple, array $dependencies, string $name, callable $callback): void
+    private function setService(PimpleContainer $pimple, string $name, callable $callback, array $dependencies): void
     {
         $pimple[$name] = $this->isShared($name, $dependencies) ? $callback : $pimple->factory($callback);
     }
@@ -248,7 +250,7 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function setAlias(PimpleContainer $pimple, array $dependencies, string $alias, string $name): void
+    private function setAlias(PimpleContainer $pimple, string $alias, string $name, array $dependencies): void
     {
         $shared_alias   = $dependencies['shared'][$alias] ?? null;
         $shared_service = $this->isShared($name, $dependencies);
