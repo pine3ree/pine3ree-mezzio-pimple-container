@@ -55,7 +55,7 @@ class ContainerFactory
 
         $pimple = new PimpleContainer();
         $pimple->offsetSet('config', $config ?? []);
-        $pimple->offsetSet(ContainerInterface::class, new PsrContainer($pimple));
+        $pimple->offsetSet(ContainerInterface::class, fn(PimpleContainer $c) => new PsrContainer($c));
 
         /** @var ContainerInterface $container Fetched from pimple so that it is marked as frozen */
         $container = $pimple->offsetGet(ContainerInterface::class);
