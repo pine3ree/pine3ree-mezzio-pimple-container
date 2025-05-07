@@ -12,8 +12,8 @@ namespace pine3ree\Mezzio\Pimple;
 
 use Pimple\Container as PimpleContainer;
 use Pimple\Exception\ExpectedInvokableException;
-use Pimple\Psr11\Container as PsrContainer;
 use Psr\Container\ContainerInterface;
+use pine3ree\Mezzio\Pimple\Container;
 use pine3ree\Mezzio\Pimple\Exception\EmptyConfigurationException;
 
 use function class_exists;
@@ -51,16 +51,14 @@ class ContainerFactory
             );
         }
 
-        $pimple = new PimpleContainer();
-        $pimple->offsetSet('config', $config ?? []);
+        $container = new Container();
+        $container->offsetSet('config', $config ?? []);
 
-        $container = new PsrContainer($pimple);
-
-        $this->injectServices($pimple, $dependencies);
-        $this->injectFactories($pimple, $container, $dependencies);
-        $this->injectInvokables($pimple, $container, $dependencies);
-        $this->injectAliases($pimple, $dependencies);
-        $this->injectExtensions($pimple, $container, $dependencies);
+        $this->injectServices($container, $dependencies);
+        $this->injectFactories($container, $dependencies);
+        $this->injectInvokables($container, $dependencies);
+        $this->injectAliases($container, $dependencies);
+        $this->injectExtensions($container, $dependencies);
 
         return $container;
     }
@@ -68,7 +66,7 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectServices(PimpleContainer $pimple, array $dependencies): void
+    private function injectServices(Container $container, array $dependencies): void
     {
         $services = $dependencies['services'] ?? null;
 
@@ -78,11 +76,15 @@ class ContainerFactory
 
         foreach ($services as $name => $service) {
             if (is_object($service)) {
-                $pimple[$name] = $this->isShared($name, $dependencies)
-                    ? fn() => $service
-                    : $pimple->factory(fn() => clone $service);
+                if ($this->isShared($name, $dependencies)) {
+                    $container[$name] = $service;
+                } elseif (is_callable($service)) {
+                    $container->factory($service);
+                } else {
+                    $container->factory(fn() => clone $service);
+                }
             } else {
-                $pimple[$name] = $service;
+                $container[$name] = $service;
             }
         }
     }
@@ -90,7 +92,7 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectFactories(PimpleContainer $pimple, ContainerInterface $container, array $dependencies): void
+    private function injectFactories(Container $container, array $dependencies): void
     {
         $factories = $dependencies['factories'] ?? null;
 
@@ -100,21 +102,20 @@ class ContainerFactory
 
         foreach ($factories as $name => $factory) {
             $callback = function () use (
-                $pimple,
                 $container,
                 $factory,
                 $name
             ) {
-                $factory = $this->getFactoryFor($factory, 'factory', $pimple, $name);
+                $factory = $this->getFactoryFor($factory, 'factory', $container, $name);
                 return $factory($container, $name);
             };
 
             $delegators = $dependencies['delegators'][$name] ?? null;
 
             if (empty($delegators)) {
-                $this->setService($pimple, $dependencies, $name, $callback);
+                $this->setService($container, $dependencies, $name, $callback);
             } elseif (is_array($delegators)) {
-                $this->setServiceWithDelegators($pimple, $dependencies, $delegators, $container, $name, $callback);
+                $this->setServiceWithDelegators($dependencies, $delegators, $container, $name, $callback);
             }
         }
     }
@@ -122,7 +123,7 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectInvokables(PimpleContainer $pimple, ContainerInterface $container, array $dependencies): void
+    private function injectInvokables(Container $container, array $dependencies): void
     {
         $invokables = $dependencies['invokables'] ?? null;
 
@@ -145,13 +146,13 @@ class ContainerFactory
             $delegators = $dependencies['delegators'][$fqcn] ?? null;
 
             if (empty($delegators)) {
-                $this->setService($pimple, $dependencies, $fqcn, $callback);
+                $this->setService($container, $dependencies, $fqcn, $callback);
             } elseif (is_array($delegators)) {
-                $this->setServiceWithDelegators($pimple, $dependencies, $delegators, $container, $fqcn, $callback);
+                $this->setServiceWithDelegators($dependencies, $delegators, $container, $fqcn, $callback);
             }
 
             if (is_string($alias) && $alias !== $fqcn) {
-                $this->setAlias($pimple, $dependencies, $alias, $fqcn);
+                $this->setAlias($container, $dependencies, $alias, $fqcn);
             }
         }
     }
@@ -159,7 +160,7 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectAliases(PimpleContainer $pimple, array $dependencies): void
+    private function injectAliases(Container $container, array $dependencies): void
     {
         $aliases = $dependencies['aliases'] ?? null;
 
@@ -168,14 +169,14 @@ class ContainerFactory
         }
 
         foreach ($aliases as $alias => $name) {
-            $this->setAlias($pimple, $dependencies, $alias, $name);
+            $this->setAlias($container, $dependencies, $alias, $name);
         }
     }
 
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function injectExtensions(PimpleContainer $pimple, ContainerInterface $container, array $dependencies): void
+    private function injectExtensions(ContainerInterface $container, array $dependencies): void
     {
         $extensions = $dependencies['extensions'] ?? null;
 
@@ -185,15 +186,14 @@ class ContainerFactory
 
         foreach ($extensions as $name => $extensions) {
             foreach ($extensions as $extension) {
-                $pimple->extend($name, function (
+                $container->extend($name, function (
                     $service,
-                    PimpleContainer $pimple
+                    PimpleContainer $container
                 ) use (
-                    $container,
                     $extension,
                     $name
                 ) {
-                    $extensionFactory = $this->getFactoryFor($extension, 'extension', $pimple, $name);
+                    $extensionFactory = $this->getFactoryFor($extension, 'extension', $container, $name);
                     // Passing extra parameter service $name
                     return $extensionFactory($service, $container, $name);
                 });
@@ -209,22 +209,20 @@ class ContainerFactory
      * @param array<string, array<int, string|object>> $delegators
      */
     private function setServiceWithDelegators(
-        PimpleContainer $pimple,
         array $dependencies,
         array $delegators,
         ContainerInterface $container,
         string $name,
         callable $callback
     ): void {
-        $this->setService($pimple, $dependencies, $name, function () use (
-            $pimple,
+        $this->setService($container, $dependencies, $name, function () use (
             $delegators,
             $container,
             $name,
             $callback
         ) {
             foreach ($delegators as $delegator) {
-                $delegatorFactory = $this->getFactoryFor($delegator, 'delegator', $pimple, $name);
+                $delegatorFactory = $this->getFactoryFor($delegator, 'delegator', $container, $name);
                 $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
             return $callback();
@@ -234,33 +232,33 @@ class ContainerFactory
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function setService(PimpleContainer $pimple, array $dependencies, string $name, callable $callback): void
+    private function setService(Container $container, array $dependencies, string $name, callable $callback): void
     {
-        $pimple[$name] = $this->isShared($name, $dependencies) ? $callback : $pimple->factory($callback);
+        $container[$name] = $this->isShared($name, $dependencies) ? $callback : $container->factory($callback);
     }
 
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function setAlias(PimpleContainer $pimple, array $dependencies, string $alias, string $name): void
+    private function setAlias(Container $container, array $dependencies, string $alias, string $name): void
     {
         $shared_alias   = $dependencies['shared'][$alias] ?? null;
         $shared_service = $this->isShared($name, $dependencies);
 
         $callback = function () use (
-            $pimple,
+            $container,
             $name,
             $shared_alias,
             $shared_service
         ) {
-            $service = $pimple->offsetGet($name);
+            $service = $container->offsetGet($name);
             if ($shared_alias === false && is_object($service)) {
                 return $shared_service ? clone $service : $service;
             }
             return $service;
         };
 
-        $pimple[$alias] = $shared_alias === true ? $callback : $pimple->factory($callback);
+        $container[$alias] = $shared_alias === true ? $callback : $container->factory($callback);
     }
 
     /**
@@ -289,7 +287,7 @@ class ContainerFactory
      * @return callable
      * @throws ExpectedInvokableException
      */
-    private function getFactoryFor($objectOrClass, string $type, PimpleContainer $pimple, string $name)
+    private function getFactoryFor($objectOrClass, string $type, Container $container, string $name)
     {
         if (is_object($objectOrClass)) {
             $factory = $objectOrClass;
@@ -306,8 +304,8 @@ class ContainerFactory
                     "The {$type} class `{$class}` provided to initialize service `{$name}` does not exist"
                 );
             }
-            if ($pimple->offsetExists($class)) {
-                $factory = $pimple->offsetGet($class);
+            if ($container->offsetExists($class)) {
+                $factory = $container->offsetGet($class);
                 if (!is_object($factory)) {
                     throw new ExpectedInvokableException(
                         "The {$type} service class `{$class}` did not return an object from the container"
@@ -325,8 +323,8 @@ class ContainerFactory
         }
 
         // Store the callable delegator instance into the container and protect it as callback
-        if (!$pimple->offsetExists($class)) {
-            $pimple[$class] = $pimple->protect($factory);
+        if (!$container->offsetExists($class)) {
+            $container[$class] = $container->protect($factory);
         }
 
         return $factory;
