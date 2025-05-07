@@ -14,7 +14,9 @@ use Pimple\Container as PimpleContainer;
 use Pimple\Exception\ExpectedInvokableException;
 use Pimple\Psr11\Container as PsrContainer;
 use Psr\Container\ContainerInterface;
+use Throwable;
 use pine3ree\Mezzio\Pimple\Exception\EmptyConfigurationException;
+use pine3ree\Mezzio\Pimple\Exception\RuntimeException;
 
 use function class_exists;
 use function get_class;
@@ -115,7 +117,7 @@ class ContainerFactory
                 $factory,
                 $name
             ) {
-                $factory = $this->getFactoryFor($factory, 'factory', $pimple, $name);
+                $factory = $this->getFactory($factory, 'factory', $name, $pimple);
                 return $factory($container, $name);
             };
 
@@ -212,7 +214,7 @@ class ContainerFactory
                     $extension,
                     $name
                 ) {
-                    $extensionFactory = $this->getFactoryFor($extension, 'extension', $pimple, $name);
+                    $extensionFactory = $this->getFactory($extension, 'extension', $name, $pimple);
                     // Passing extra parameter service $name
                     return $extensionFactory($service, $container, $name);
                 });
@@ -245,7 +247,7 @@ class ContainerFactory
             $callback
         ) {
             foreach ($delegators as $delegator) {
-                $delegatorFactory = $this->getFactoryFor($delegator, 'delegator', $pimple, $name);
+                $delegatorFactory = $this->getFactory($delegator, 'delegator', $name, $pimple);
                 $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
             return $callback();
@@ -308,46 +310,65 @@ class ContainerFactory
      * Validate an invokable-factory instance or class and return an instance of it
      *
      * @param class-string|callable|object|mixed $objectOrClass
-     * @param string $type the type of factory
+     * @param string $type The type of factory (factory|delegator|extension)
      * @return callable
      * @throws ExpectedInvokableException
      */
-    private function getFactoryFor($objectOrClass, string $type, PimpleContainer $pimple, string $name)
+    private function getFactory($objectOrClass, string $type, string $name, PimpleContainer $pimple)
     {
         if (is_object($objectOrClass)) {
-            $factory = $objectOrClass;
+            if (is_callable($objectOrClass)) {
+                return $objectOrClass;
+            }
             $class = get_class($objectOrClass);
+            throw new ExpectedInvokableException(
+                "The {$type} instance of type `{$class}` provided to initialize"
+                . " service `{$name}` is not callable"
+            );
+        }
+
+        if (!is_string($objectOrClass)) {
+            throw new ExpectedInvokableException(
+                "The `{$type}` provided to initialize service `{$name}` must be"
+                . " an invokable instance or class"
+            );
+        }
+
+        $class = $objectOrClass;
+        if (!class_exists($class)) {
+            throw new ExpectedInvokableException(
+                "The {$type} class `{$class}` provided to initialize service"
+                . " `{$name}` does not exist"
+            );
+        }
+
+        if ($pimple->offsetExists($class)) {
+            $factory = $pimple->offsetGet($class);
+            if (!is_object($factory)) {
+                throw new ExpectedInvokableException(
+                    "The {$type} service class `{$class}` did not return an object"
+                    . " from the container"
+                );
+            }
         } else {
-            if (!is_string($objectOrClass)) {
-                throw new ExpectedInvokableException(
-                    "The argument provided must be an invokable instance or class"
-                );
-            }
-            $class = $objectOrClass;
-            if (!class_exists($class)) {
-                throw new ExpectedInvokableException(
-                    "The {$type} class `{$class}` provided to initialize service `{$name}` does not exist"
-                );
-            }
-            if ($pimple->offsetExists($class)) {
-                $factory = $pimple->offsetGet($class);
-                if (!is_object($factory)) {
-                    throw new ExpectedInvokableException(
-                        "The {$type} service class `{$class}` did not return an object from the container"
-                    );
-                }
-            } else {
+            try {
                 $factory = new $class();
+            } catch (Throwable $ex) {
+                throw new RuntimeException(
+                    "The {$type} class `{$class}` provided to initialize service"
+                    . " `{$name}` cannot be intantiated without arguments"
+                );
             }
         }
 
         if (!is_callable($factory)) {
             throw new ExpectedInvokableException(
-                "The {$type} class `{$class}` provided to initialize service `{$name}` is not callable"
+                "The {$type} class `{$class}` provided to initialize service"
+                . " `{$name}` is not callable"
             );
         }
 
-        // Store the callable delegator instance into the container and protect it as callback
+        // Store the factory instance into the container and protect it as callable-service
         if (!$pimple->offsetExists($class)) {
             $pimple[$class] = $pimple->protect($factory);
         }
