@@ -9,10 +9,11 @@ declare(strict_types=1);
 
 namespace pine3ree\Mezzio\Pimple\Exception;
 
+use Psr\Container\ContainerExceptionInterface;
 use RuntimeException;
 use Throwable;
 
-class EmptyConfigurationException extends RuntimeException
+class EmptyConfigurationException extends RuntimeException implements ContainerExceptionInterface
 {
     public function __construct(string $message = '', int $code = 0, ?Throwable $previous = null)
     {
