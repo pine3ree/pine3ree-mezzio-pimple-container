@@ -78,9 +78,13 @@ class ContainerFactory
 
         foreach ($services as $name => $service) {
             if (is_object($service)) {
-                $pimple[$name] = $this->isShared($name, $dependencies)
-                    ? fn() => $service
-                    : $pimple->factory(fn() => clone $service);
+                if (is_callable($service)) {
+                    $pimple[$name] = $pimple->protect($service);
+                } elseif ($this->isShared($name, $dependencies)) {
+                    $pimple[$name] = $service;
+                } else {
+                    $pimple[$name] = $pimple->factory(fn() => clone $service);
+                }
             } else {
                 $pimple[$name] = $service;
             }
