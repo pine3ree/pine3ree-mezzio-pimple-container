@@ -33,9 +33,9 @@ class ContainerFactory
      * The invokable factory method
      *
      * @param array<string, array<string|int, mixed>> $dependencies The dependency configuration array
-     * @param array<string, mixed>|null $config Optional configuration array used to initialize
-     *      the 'config' service. If missing the 'config' service will be set to
-     *      an empty array.
+     * @param array<string, mixed>|null $config Optional configuration array used
+     *      to initializethe 'config' service. If missing the 'config' service will
+     *      be set to an empty array.
      * @return ContainerInterface
      */
     public function __invoke(array $dependencies, ?array $config = null): ContainerInterface
