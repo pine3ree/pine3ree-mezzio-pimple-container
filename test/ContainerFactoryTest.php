@@ -19,6 +19,7 @@ use Pimple\Exception\ExpectedInvokableException;
 use Psr\Container\ContainerInterface;
 use pine3ree\Mezzio\Pimple\ContainerFactory;
 use pine3ree\Mezzio\Pimple\Exception\EmptyConfigurationException;
+use pine3ree\Mezzio\Pimple\Exception\RuntimeException as ContainerRuntimeException;
 use pine3ree\test\Mezzio\Pimple\Asset\DelegatorFactory;
 use pine3ree\test\Mezzio\Pimple\Asset\Dependency;
 use pine3ree\test\Mezzio\Pimple\Asset\Extension;
@@ -263,6 +264,63 @@ class ContainerFactoryTest extends TestCase
 
         self::assertEquals(InvokableDelegatorFactoryA::class, $invokableService->getProperty('A'));
         self::assertEquals(InvokableDelegatorFactoryB::class, $invokableService->getProperty('B'));
+    }
+
+    public function testInvalidDelegatorDefinitionRaisesException()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config = array_merge_recursive($config, [
+            'dependencies' => [
+                'delegators' => [
+                    Service::class => [
+                        new DateTimeImmutable(), // non-callable
+                    ],
+                ],
+            ],
+        ]);
+
+        $container = $this->createContainerByConfig($config);
+
+        $this->expectException(ExpectedInvokableException::class);
+        $service = $container->get(Service::Class);
+    }
+
+    public function testNonExistentDelegatorClassRaisesException()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config = array_merge_recursive($config, [
+            'dependencies' => [
+                'delegators' => [
+                    Service::class => [
+                        NonExistentDelegatorClass::class, // non-existent-class
+                    ],
+                ],
+            ],
+        ]);
+
+        $container = $this->createContainerByConfig($config);
+
+        $this->expectException(ExpectedInvokableException::class);
+        $service = $container->get(Service::Class);
+    }
+
+    public function testComplexDelegatorClassWithoutOwnFactoryRaisesException()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config = array_merge_recursive($config, [
+            'dependencies' => [
+                'delegators' => [
+                    Service::class => [
+                        \DirectoryIterator::class, // non-existent-class
+                    ],
+                ],
+            ],
+        ]);
+
+        $container = $this->createContainerByConfig($config);
+
+        $this->expectException(ContainerRuntimeException::class);
+        $service = $container->get(Service::Class);
     }
 
     public function testAliases()
