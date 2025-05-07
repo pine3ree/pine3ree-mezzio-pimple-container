@@ -211,6 +211,8 @@ class ContainerFactory
      *
      * @param array<string, array<string|int, mixed>> $dependencies
      * @param array<string, array<int, string|object>> $delegators
+     * @param callable $callback The callback returnig the original service or
+     *      previouse delegator. It must not have any parameters defined.
      */
     private function setServiceWithDelegators(
         PimpleContainer $pimple,
