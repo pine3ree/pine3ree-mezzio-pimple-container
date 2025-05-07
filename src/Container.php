@@ -15,14 +15,6 @@ use Psr\Container\ContainerInterface;
  */
 final class Container extends PimpleContainer implements ContainerInterface
 {
-    /**
-     * Disable passing services at constructor
-     */
-    public function __construct()
-    {
-        parent::__construct([]);
-    }
-
     public function get(string $id)
     {
         return $this->offsetGet($id);
