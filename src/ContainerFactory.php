@@ -109,8 +109,8 @@ class ContainerFactory
 
         foreach ($factories as $name => $factory) {
             // Pimple service-definition callbacks support a pimple-container
-            // instance as argument, but we use a 0-arity callback so that it can
-            // be used as a delegator-factory callback argument as well
+            // instance as argument, but we use "0-arity" callbacks that can
+            // also be used as the delegator-factory callback argument
             $callback = function () use (
                 $pimple,
                 $container,
@@ -146,10 +146,10 @@ class ContainerFactory
         }
 
         foreach ($invokables as $alias => $fqcn) {
-            // Pimple service-definition callbacks support a pimple-container
-            // instance as argument, but we use a 0-arity callback so that it can
-            // be used as a delegator-factory callback argument as well
-            $callback = function () use (
+            // Invokable-service definition callbacks do not need the container
+            // as argument, so we use "0-arity" callbacks that can also be used
+            // as the delegator-factory callback argument
+             $callback = function () use (
                 $fqcn
             ) {
                 if (!class_exists($fqcn)) {
