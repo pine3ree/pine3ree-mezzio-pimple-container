@@ -354,6 +354,17 @@ class ContainerFactoryTest extends TestCase
         self::assertSame($inv1, $inv2);
     }
 
+    public function testNonSharedInjectedService()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        $config['dependencies']['shared']['date'] = false;
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertInstanceOf(DateTimeImmutable::class, $container->get('date'));
+        self::assertNotSame($container->get('date'), $container->get('date'));
+    }
+
     public function testConfigurationService()
     {
         $config = include __DIR__ . '/config/config.php';
