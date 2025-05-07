@@ -105,7 +105,7 @@ class ContainerFactory
                 $factory,
                 $name
             ) {
-                $factory = $this->getInvokableFactoryInstance($pimple, 'factory', $factory, $name);
+                $factory = $this->getFactoryFor($factory, 'factory', $pimple, $name);
                 return $factory($container, $name);
             };
 
@@ -193,7 +193,7 @@ class ContainerFactory
                     $extension,
                     $name
                 ) {
-                    $extensionFactory = $this->getInvokableFactoryInstance($pimple, 'extension', $extension, $name);
+                    $extensionFactory = $this->getFactoryFor($extension, 'extension', $pimple, $name);
                     // Passing extra parameter service $name
                     return $extensionFactory($service, $container, $name);
                 });
@@ -224,7 +224,7 @@ class ContainerFactory
             $callback
         ) {
             foreach ($delegators as $delegator) {
-                $delegatorFactory = $this->getInvokableFactoryInstance($pimple, 'delegator', $delegator, $name);
+                $delegatorFactory = $this->getFactoryFor($delegator, 'delegator', $pimple, $name);
                 $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
             return $callback();
@@ -282,16 +282,17 @@ class ContainerFactory
     }
 
     /**
-     * Validate an invokable-factory instance or class
+     * Validate an invokable-factory instance or class and return an instance of it
      *
      * @param class-string|callable|object|mixed $objectOrClass
+     * @param string $type the type of factory
      * @return callable
      * @throws ExpectedInvokableException
      */
-    private function getInvokableFactoryInstance(PimpleContainer $pimple, string $type, $objectOrClass, string $name)
+    private function getFactoryFor($objectOrClass, string $type, PimpleContainer $pimple, string $name)
     {
         if (is_object($objectOrClass)) {
-            $invokable = $objectOrClass;
+            $factory = $objectOrClass;
             $class = get_class($objectOrClass);
         } else {
             if (!is_string($objectOrClass)) {
@@ -306,18 +307,18 @@ class ContainerFactory
                 );
             }
             if ($pimple->offsetExists($class)) {
-                $invokable = $pimple->offsetGet($class);
-                if (!is_object($invokable)) {
+                $factory = $pimple->offsetGet($class);
+                if (!is_object($factory)) {
                     throw new ExpectedInvokableException(
                         "The {$type} service class `{$class}` did not return an object from the container"
                     );
                 }
             } else {
-                $invokable = new $class();
+                $factory = new $class();
             }
         }
 
-        if (!is_callable($invokable)) {
+        if (!is_callable($factory)) {
             throw new ExpectedInvokableException(
                 "The {$type} class `{$class}` provided to initialize service `{$name}` is not callable"
             );
@@ -325,9 +326,9 @@ class ContainerFactory
 
         // Store the callable delegator instance into the container and protect it as callback
         if (!$pimple->offsetExists($class)) {
-            $pimple[$class] = $pimple->protect($invokable);
+            $pimple[$class] = $pimple->protect($factory);
         }
 
-        return $invokable;
+        return $factory;
     }
 }
