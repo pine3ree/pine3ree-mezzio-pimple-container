@@ -13,7 +13,7 @@ use Psr\Container\ContainerInterface;
 use pine3ree\Mezzio\Pimple\Exception\NotFoundException;
 
 /**
- * A PSR-11 container
+ * A PSR-11 compliant container "decorating" a Pimple container
  */
 final class Container implements ContainerInterface
 {
