@@ -6,17 +6,24 @@
  * @author     pine3ree https://github.com/pine3ree
  */
 
-use pine3ree\test\Mezzio\Pimple\Asset\Delegator;
-use pine3ree\test\Mezzio\Pimple\Asset\DelegatorFactory;
 use pine3ree\test\Mezzio\Pimple\Asset\Dependency;
 use pine3ree\test\Mezzio\Pimple\Asset\Factory;
 use pine3ree\test\Mezzio\Pimple\Asset\Invokable;
 use pine3ree\test\Mezzio\Pimple\Asset\Service;
+use pine3ree\test\Mezzio\Pimple\Asset\ServiceDelegator;
+use pine3ree\test\Mezzio\Pimple\Asset\ServiceDelegatorFactory;
+use pine3ree\test\Mezzio\Pimple\Asset\Simple;
 
 return [
     'dependencies' => [
         'services' => [
             'date' => new DateTimeImmutable(),
+            'simple' => new Simple(),
+            'settings' => [
+                'keyA' => 'valueA',
+                'keyB' => 'valueB',
+            ],
+            'callback' => fn() => 42,
         ],
         'invokables' => [
             Invokable::class,
@@ -24,12 +31,13 @@ return [
         ],
         'factories' => [
             Service::class => Factory::class,
-            Delegator::class => DelegatorFactory::class,
+            ServiceDelegator::class => ServiceDelegatorFactory::class,
         ],
         'aliases' => [
             'service' => Service::class,
             'invokable' => Invokable::class,
         ],
     ],
-    'theAnswer' => 42,
+    // other app configuration keys
+    'another' => 42,
 ];

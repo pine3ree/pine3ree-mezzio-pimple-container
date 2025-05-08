@@ -13,12 +13,12 @@ namespace pine3ree\test\Mezzio\Pimple\Asset;
 use Psr\Container\ContainerInterface;
 
 use pine3ree\test\Mezzio\Pimple\Asset\Service;
-use pine3ree\test\Mezzio\Pimple\Asset\Delegator;
+use pine3ree\test\Mezzio\Pimple\Asset\ServiceDelegator;
 
-class DelegatorFactory
+class ServiceDelegatorFactory
 {
     public function __invoke(ContainerInterface $container, string $fqcn, callable $callback, ?array $options = null): Service
     {
-        return new Delegator($service = $callback());
+        return new ServiceDelegator($service = $callback());
     }
 }

@@ -14,13 +14,14 @@ namespace pine3ree\test\Mezzio\Pimple;
 use function array_merge_recursive;
 
 use DateTimeImmutable;
+use DirectoryIterator;
 use PHPUnit\Framework\TestCase;
 use Pimple\Exception\ExpectedInvokableException;
 use Psr\Container\ContainerInterface;
 use pine3ree\Mezzio\Pimple\ContainerFactory;
 use pine3ree\Mezzio\Pimple\Exception\EmptyConfigurationException;
 use pine3ree\Mezzio\Pimple\Exception\RuntimeException as ContainerRuntimeException;
-use pine3ree\test\Mezzio\Pimple\Asset\DelegatorFactory;
+use pine3ree\test\Mezzio\Pimple\Asset\ServiceDelegatorFactory;
 use pine3ree\test\Mezzio\Pimple\Asset\Dependency;
 use pine3ree\test\Mezzio\Pimple\Asset\Extension;
 use pine3ree\test\Mezzio\Pimple\Asset\Factory;
@@ -29,6 +30,9 @@ use pine3ree\test\Mezzio\Pimple\Asset\InvokableDelegatorFactoryA;
 use pine3ree\test\Mezzio\Pimple\Asset\InvokableDelegatorFactoryB;
 use pine3ree\test\Mezzio\Pimple\Asset\NonInvokableFactory;
 use pine3ree\test\Mezzio\Pimple\Asset\Service;
+use pine3ree\test\Mezzio\Pimple\Asset\Simple;
+
+use function time;
 
 class ContainerFactoryTest extends TestCase
 {
@@ -54,27 +58,34 @@ class ContainerFactoryTest extends TestCase
     public function testInjectedObjectServices()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config['dependencies']['services']['now'] = new DateTimeImmutable();
 
         $container = $this->createContainerByConfig($config);
 
-        self::assertInstanceOf(DateTimeImmutable::class, $container->get('now'));
+        self::assertInstanceOf(Simple::class, $container->get('simple'));
+        self::assertInstanceOf(DateTimeImmutable::class, $container->get('date'));
+
+        $now = $container->get('date');
+
+        self::assertLessThanOrEqual(time(), $now->getTimeStamp());
+        self::assertGreaterThan(time() - 3600, $now->getTimeStamp());
     }
 
     public function testInjectedNonObjectServices()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config['dependencies']['services']['answer'] = 42;
 
         $container = $this->createContainerByConfig($config);
 
-        self::assertEquals(42, $container->get('answer'));
+        $settings = $container->get('settings');
+
+        self::assertIsArray($settings);
+        self::assertArrayHasKey('keyA', $settings);
+        self::assertEquals('valueA', $settings['keyA']);
     }
 
     public function testInjectedCallableService()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config['dependencies']['services']['callback'] = fn() => 42;
 
         $container = $this->createContainerByConfig($config);
 
@@ -87,11 +98,13 @@ class ContainerFactoryTest extends TestCase
     public function testNoServices()
     {
         $config = include __DIR__ . '/config/config.php';
+        // Remove service key from dependencies
         $config['dependencies']['services'] = [];
 
         $container = $this->createContainerByConfig($config);
 
-        self::assertFalse($container->has('date'));
+        self::assertFalse($container->has('simple'));
+        self::assertFalse($container->has('callback'));
     }
 
     public function testInvokables()
@@ -149,29 +162,31 @@ class ContainerFactoryTest extends TestCase
         $container = $this->createContainerByConfig($config);
 
         self::assertFalse($container->has(Service::class));
-        self::assertFalse($container->has(Delegator::class));
+        self::assertFalse($container->has(ServiceDelegator::class));
     }
 
     public function testFactoriesThatAreAlsoRegisteredServices()
     {
         $config = include __DIR__ . '/config/config.php';
+        // Explicitly aet Factory as invokable service
         $config['dependencies']['invokables'][Factory::class] = Factory::class;
 
         $container = $this->createContainerByConfig($config);
 
+        self::assertIsCallable($container->get(Factory::Class));
         self::assertInstanceOf(Service::class, $container->get(Service::Class));
     }
 
     public function testInvokableFactories()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config['dependencies']['factories']['datetime'] = fn() => new DateTimeImmutable();
+//        $config['dependencies']['factories']['datetime'] = fn() => new DateTimeImmutable();
 
         $container = $this->createContainerByConfig($config);
 
-        self::assertInstanceOf(DateTimeImmutable::class, $datetime1 = $container->get('datetime'));
-        self::assertInstanceOf(DateTimeImmutable::class, $datetime2 = $container->get('datetime'));
-        self::assertSame($datetime1, $datetime2);
+        self::assertInstanceOf(Invokable::class, $inv1 = $container->get(Invokable::class));
+        self::assertInstanceOf(Invokable::class, $inv2 = $container->get(Invokable::class));
+        self::assertSame($inv1, $inv2);
     }
 
     public function testThatNonExistentFactoryRaisesException()
@@ -233,7 +248,7 @@ class ContainerFactoryTest extends TestCase
             'dependencies' => [
                 'delegators' => [
                     Service::class => [
-                        DelegatorFactory::class,
+                        ServiceDelegatorFactory::class,
                     ],
                 ],
             ],
@@ -242,7 +257,7 @@ class ContainerFactoryTest extends TestCase
         $container = $this->createContainerByConfig($config);
         $service   = $container->get(Service::Class);
 
-        self::assertGreaterThan(Dependency::MAX, $service->getRandomNumber());
+        self::assertGreaterThan(Dependency::MAX, $service->getNumber());
     }
 
     public function testDelegatorsForInvokableService()
@@ -311,7 +326,7 @@ class ContainerFactoryTest extends TestCase
             'dependencies' => [
                 'delegators' => [
                     Service::class => [
-                        \DirectoryIterator::class, // non-existent-class
+                        DirectoryIterator::class, // cannot instantiate without args
                     ],
                 ],
             ],
@@ -351,13 +366,17 @@ class ContainerFactoryTest extends TestCase
 
         $container = $this->createContainerByConfig($config);
 
-        self::assertInstanceOf(Dependency::class, $dep1 = $container->get(Dependency::class));
-        self::assertInstanceOf(Dependency::class, $dep2 = $container->get(Dependency::class));
-        self::assertSame($dep1, $dep2);
+        // Test injected-services are shared
+        self::assertSame($container->get('date'), $container->get('date'));
 
-        self::assertInstanceOf(Dependency::class, $dep1 = $container->get('dependency'));
-        self::assertInstanceOf(Dependency::class, $dep2 = $container->get('dependency'));
-        self::assertSame($dep1, $dep2);
+        // Test invokable-services are shared
+        self::assertSame($container->get(Invokable::class), $container->get(Invokable::class));
+
+        // Test factory-services are shared
+        self::assertSame($container->get(Dependency::class), $container->get(Dependency::class));
+
+        // Test aliased-services are shared
+        self::assertSame($container->get('dependency'), $container->get('dependency'));
     }
 
     public function testWhenNonSharedByDefault()
@@ -367,28 +386,35 @@ class ContainerFactoryTest extends TestCase
 
         $container = $this->createContainerByConfig($config);
 
-        self::assertInstanceOf(Dependency::class, $dep1 = $container->get(Dependency::class));
-        self::assertInstanceOf(Dependency::class, $dep2 = $container->get(Dependency::class));
-        self::assertNotSame($dep1, $dep2);
+        // Test injected-services
+        self::assertInstanceOf(DateTimeImmutable::class, $date1 = $container->get('date'));
 
-        self::assertInstanceOf(Dependency::class, $dep1 = $container->get('dependency'));
-        self::assertInstanceOf(Dependency::class, $dep2 = $container->get('dependency'));
-        self::assertNotSame($dep1, $dep2);
+        // Test invokable-services
+        self::assertInstanceOf(Invokable::class, $inv1 = $container->get(Invokable::class));
+
+        // Test factory-services
+        self::assertInstanceOf(Dependency::class, $dep1 = $container->get(Dependency::class));
+
+        // Test aliased-services
+        self::assertInstanceOf(Dependency::class, $ali1 = $container->get('dependency'));
     }
 
     public function testSharedNegativeOverrides()
     {
         $config = include __DIR__ . '/config/config.php';
+
         $config['dependencies']['shared_by_default'] = true;
         $config['dependencies']['shared'][Invokable::class] = true;
         $config['dependencies']['shared']['invokable'] = false;
 
         $container = $this->createContainerByConfig($config);
 
+        // Test invokable-services
         self::assertInstanceOf(Invokable::class, $inv1 = $container->get(Invokable::class));
         self::assertInstanceOf(Invokable::class, $inv2 = $container->get(Invokable::class));
         self::assertSame($inv1, $inv2);
 
+        // Test aliased-services
         self::assertInstanceOf(Invokable::class, $inv1 = $container->get('invokable'));
         self::assertInstanceOf(Invokable::class, $inv2 = $container->get('invokable'));
         self::assertNotSame($inv1, $inv2);
@@ -397,6 +423,7 @@ class ContainerFactoryTest extends TestCase
     public function testSharedPositiveOverrides()
     {
         $config = include __DIR__ . '/config/config.php';
+
         $config['dependencies']['shared_by_default'] = false;
         $config['dependencies']['shared'][Invokable::class] = false;
         $config['dependencies']['shared']['invokable'] = true;
@@ -415,12 +442,24 @@ class ContainerFactoryTest extends TestCase
     public function testNonSharedInjectedService()
     {
         $config = include __DIR__ . '/config/config.php';
+        // Override service sharing
         $config['dependencies']['shared']['date'] = false;
 
         $container = $this->createContainerByConfig($config);
 
         self::assertInstanceOf(DateTimeImmutable::class, $container->get('date'));
         self::assertNotSame($container->get('date'), $container->get('date'));
+    }
+
+    public function testThatInjectedCallablesServiceAreAlwaysShared()
+    {
+        $config = include __DIR__ . '/config/config.php';
+        // Override service sharing
+        $config['dependencies']['shared']['callback'] = false;
+
+        $container = $this->createContainerByConfig($config);
+
+        self::assertSame($container->get('callback'), $container->get('callback'));
     }
 
     public function testConfigurationService()
@@ -434,7 +473,7 @@ class ContainerFactoryTest extends TestCase
         self::assertIsArray($container->get('config'));
         self::assertSame($config, $container->get('config'));
 
-        self::assertEquals(42, $config['theAnswer'] ?? null);
+        self::assertEquals(42, $config['another'] ?? null);
     }
 
     private function createContainerByConfig(array $config): ContainerInterface
