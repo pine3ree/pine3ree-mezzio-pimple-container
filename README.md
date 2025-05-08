@@ -9,6 +9,9 @@ It is actually based on the abandoned library [laminas-pimple-config](https://gi
 modified in order to use a single pimple-psr-container. Most of the following
 text is taken from it.
 
+Note: in this library the psr-container extends the pimple-container class instead
+of decorating it.
+
 ## Installation
 
 Run the following to install this library:
