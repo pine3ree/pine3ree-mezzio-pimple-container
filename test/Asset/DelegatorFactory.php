@@ -19,11 +19,6 @@ class DelegatorFactory
 {
     public function __invoke(ContainerInterface $container, string $fqcn, callable $callback, ?array $options = null): Service
     {
-//        print_R($fqcn);
-//        var_dump(method_exists($callback, '__invoke'));
-//        $rm = new \ReflectionMethod($callback, '__invoke');
-//        print_r($rm->getParameters());
-//        exit;
         return new Delegator($service = $callback());
     }
 }
