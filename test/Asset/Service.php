@@ -20,24 +20,22 @@ class Service
         $this->dependency = $dependency;
     }
 
-    public function getRandomNumber(): int
-    {
-        if ($this->dependency instanceof Dependency) {
-            $this->number = $this->dependency->getRandomNumber();
-            return $this->number;
-        }
-
-        return 0;
-    }
-
     public function withNumber(int $number): self
     {
         $this->number = $number;
         return $this;
     }
 
-    public function getNumber(): ?int
+    public function getNumber(): int
     {
-        return $this->number;
+        if (isset($this->number)) {
+            return $this->number;
+        }
+
+        if ($this->dependency instanceof Dependency) {
+            return $this->dependency->getRandomNumber();
+        }
+
+        return 0;
     }
 }
