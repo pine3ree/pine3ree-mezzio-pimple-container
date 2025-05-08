@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace pine3ree\test\Mezzio\Pimple;
 
-use function array_merge_recursive;
-
 use DateTimeImmutable;
 use DirectoryIterator;
 use PHPUnit\Framework\TestCase;
@@ -131,13 +129,7 @@ class ContainerFactoryTest extends TestCase
     public function testThatInvokablesWithNonExistingClassesRaiseExceptions()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config = array_merge_recursive($config, [
-            'dependencies' => [
-                'invokables' => [
-                    NonExistentClass::class,
-                ],
-            ],
-        ]);
+        $config['dependencies']['invokables'][] = NonExistentClass::class;
 
         $container = $this->createContainerByConfig($config);
 
@@ -225,15 +217,12 @@ class ContainerFactoryTest extends TestCase
     public function testExtensions()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config = array_merge_recursive($config, [
-            'dependencies' => [
-                'extensions' => [
-                    Service::class => [
-                        Extension::class,
-                    ],
-                ],
+        // Set/override extensions configuration
+        $config['dependencies']['extensions'] = [
+            Service::class => [
+                Extension::class,
             ],
-        ]);
+        ];
 
         $container = $this->createContainerByConfig($config);
         $service   = $container->get(Service::Class);
@@ -244,15 +233,12 @@ class ContainerFactoryTest extends TestCase
     public function testDelegatorsForFactoryService()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config = array_merge_recursive($config, [
-            'dependencies' => [
-                'delegators' => [
-                    Service::class => [
-                        ServiceDelegatorFactory::class,
-                    ],
-                ],
+        // Set/override delegators configuration
+        $config['dependencies']['delegators'] = [
+            Service::class => [
+                ServiceDelegatorFactory::class,
             ],
-        ]);
+        ];
 
         $container = $this->createContainerByConfig($config);
         $service   = $container->get(Service::Class);
@@ -263,16 +249,13 @@ class ContainerFactoryTest extends TestCase
     public function testDelegatorsForInvokableService()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config = array_merge_recursive($config, [
-            'dependencies' => [
-                'delegators' => [
-                    Invokable::class => [
-                        InvokableDelegatorFactoryA::class,
-                        InvokableDelegatorFactoryB::class,
-                    ],
-                ],
+        // Set/override delegators configuration
+        $config['dependencies']['delegators'] = [
+            Invokable::class => [
+                InvokableDelegatorFactoryA::class,
+                InvokableDelegatorFactoryB::class,
             ],
-        ]);
+        ];
 
         $container = $this->createContainerByConfig($config);
         $invokableService = $container->get(Invokable::Class);
@@ -284,15 +267,12 @@ class ContainerFactoryTest extends TestCase
     public function testInvalidDelegatorDefinitionRaisesException()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config = array_merge_recursive($config, [
-            'dependencies' => [
-                'delegators' => [
-                    Service::class => [
-                        new DateTimeImmutable(), // non-callable
-                    ],
-                ],
+        // Set/override delegators configuration
+        $config['dependencies']['delegators'] = [
+            Service::class => [
+                new DateTimeImmutable(), // non-callable
             ],
-        ]);
+        ];
 
         $container = $this->createContainerByConfig($config);
 
@@ -303,15 +283,12 @@ class ContainerFactoryTest extends TestCase
     public function testNonExistentDelegatorClassRaisesException()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config = array_merge_recursive($config, [
-            'dependencies' => [
-                'delegators' => [
-                    Service::class => [
-                        NonExistentDelegatorClass::class, // non-existent-class
-                    ],
-                ],
+        // Set/override delegators configuration
+        $config['dependencies']['delegators'] = [
+            Service::class => [
+                NonExistentDelegatorClass::class, // non-existent-class
             ],
-        ]);
+        ];
 
         $container = $this->createContainerByConfig($config);
 
@@ -322,15 +299,12 @@ class ContainerFactoryTest extends TestCase
     public function testComplexDelegatorClassWithoutOwnFactoryRaisesException()
     {
         $config = include __DIR__ . '/config/config.php';
-        $config = array_merge_recursive($config, [
-            'dependencies' => [
-                'delegators' => [
-                    Service::class => [
-                        DirectoryIterator::class, // cannot instantiate without args
-                    ],
-                ],
+        // Set/override delegators configuration
+        $config['dependencies']['delegators'] = [
+            Service::class => [
+                DirectoryIterator::class, // cannot instantiate without args
             ],
-        ]);
+        ];
 
         $container = $this->createContainerByConfig($config);
 

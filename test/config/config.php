@@ -38,6 +38,12 @@ return [
             'service' => Service::class,
             'invokable' => Invokable::class,
         ],
+        'delegators' => [
+            // Starts empty, filled in in unit-tests
+        ],
+        'extensions' => [
+            // Starts empty, filled in in unit-tests
+        ],
     ],
     // other app configuration keys
     'another' => 42,
