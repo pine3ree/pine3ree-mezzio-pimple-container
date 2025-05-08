@@ -32,6 +32,7 @@ return [
         'factories' => [
             Service::class => Factory::class,
             ServiceDelegator::class => ServiceDelegatorFactory::class,
+            'datetime' => fn() => new DateTimeImmutable(),
         ],
         'aliases' => [
             'service' => Service::class,

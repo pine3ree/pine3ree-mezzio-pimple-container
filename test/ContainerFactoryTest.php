@@ -177,16 +177,16 @@ class ContainerFactoryTest extends TestCase
         self::assertInstanceOf(Service::class, $container->get(Service::Class));
     }
 
-    public function testInvokableFactories()
+    public function testCallableFactories()
     {
         $config = include __DIR__ . '/config/config.php';
-//        $config['dependencies']['factories']['datetime'] = fn() => new DateTimeImmutable();
+        $config['dependencies']['factories']['datetime'] = fn() => new DateTimeImmutable();
 
         $container = $this->createContainerByConfig($config);
 
-        self::assertInstanceOf(Invokable::class, $inv1 = $container->get(Invokable::class));
-        self::assertInstanceOf(Invokable::class, $inv2 = $container->get(Invokable::class));
-        self::assertSame($inv1, $inv2);
+        self::assertInstanceOf(DateTimeImmutable::class, $datetime1 = $container->get('datetime'));
+        self::assertInstanceOf(DateTimeImmutable::class, $datetime2 = $container->get('datetime'));
+        self::assertSame($datetime1, $datetime2);
     }
 
     public function testThatNonExistentFactoryRaisesException()
