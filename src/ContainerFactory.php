@@ -111,22 +111,24 @@ class ContainerFactory
         $container = $pimple->offsetGet(ContainerInterface::class);
 
         foreach ($factories as $name => $factory) {
-            // Use pimple service-definition closure signature
-            $closure = function (PimpleContainer $c) use (
+            // Pimple service-definition callbacks support a pimple-container
+            // instance as argument, but we use "0-arity" callbacks that can
+            // also be used as the delegator-factory callback argument
+            $callback = function () use (
+                $pimple,
                 $container,
                 $factory,
                 $name
             ) {
-                $factory = $this->getFactory($factory, 'factory', $name, $c);
+                $factory = $this->getFactory($factory, 'factory', $name, $pimple);
                 return $factory($container, $name);
             };
 
             $delegators = $dependencies['delegators'][$name] ?? null;
 
             if (empty($delegators)) {
-                $this->setService($pimple, $name, $closure, $dependencies);
+                $this->setService($pimple, $name, $callback, $dependencies);
             } elseif (is_array($delegators)) {
-                $callback = fn() => $closure($pimple);
                 $this->setServiceWithDelegators($pimple, $name, $callback, $delegators, $dependencies);
             }
         }
@@ -146,9 +148,10 @@ class ContainerFactory
         }
 
         foreach ($invokables as $alias => $fqcn) {
-            // Use pimple service-definition closure signature even if container
-            // is not used for "invokable" services
-            $closure = function (PimpleContainer $c) use (
+            // Invokable-service definition callbacks do not need the container
+            // as argument, so we use "0-arity" callbacks that can also be used
+            // as the delegator-factory callback argument
+            $callback = function () use (
                 $fqcn
             ) {
                 if (!class_exists($fqcn)) {
@@ -162,9 +165,8 @@ class ContainerFactory
             $delegators = $dependencies['delegators'][$fqcn] ?? null;
 
             if (empty($delegators)) {
-                $this->setService($pimple, $fqcn, $closure, $dependencies);
+                $this->setService($pimple, $fqcn, $callback, $dependencies);
             } elseif (is_array($delegators)) {
-                $callback = fn() => $closure($pimple);
                 $this->setServiceWithDelegators($pimple, $fqcn, $callback, $delegators, $dependencies);
             }
 
@@ -239,29 +241,30 @@ class ContainerFactory
         array $delegators,
         array $dependencies
     ): void {
-        // Use pimple service-definition closure signature
-        $closure = function (PimpleContainer $c) use (
+        // We use a closure without the "pimple-container" parameter as done above
+        $callback = function () use (
+            $pimple,
             $delegators,
             $name,
             $callback
         ) {
-            $container = $c->offsetGet(ContainerInterface::class);
+            $container = $pimple->offsetGet(ContainerInterface::class);
             foreach ($delegators as $delegator) {
-                $delegatorFactory = $this->getFactory($delegator, 'delegator-factory', $name, $c);
+                $delegatorFactory = $this->getFactory($delegator, 'delegator-factory', $name, $pimple);
                 $callback = fn() => $delegatorFactory($container, $name, $callback);
             }
             return $callback();
         };
 
-        $this->setService($pimple, $name, $closure, $dependencies);
+        $this->setService($pimple, $name, $callback, $dependencies);
     }
 
     /**
      * @param array<string, array<string|int, mixed>> $dependencies
      */
-    private function setService(PimpleContainer $pimple, string $name, callable $closure, array $dependencies): void
+    private function setService(PimpleContainer $pimple, string $name, callable $callback, array $dependencies): void
     {
-        $pimple[$name] = $this->isShared($name, $dependencies) ? $closure : $pimple->factory($closure);
+        $pimple[$name] = $this->isShared($name, $dependencies) ? $callback : $pimple->factory($callback);
     }
 
     /**
@@ -272,20 +275,21 @@ class ContainerFactory
         $shared_alias   = $dependencies['shared'][$alias] ?? null;
         $shared_service = $this->isShared($name, $dependencies);
 
-        // Use pimple service-definition closure signature
-        $closure = function (PimpleContainer $c) use (
+        // We use a closure without the "pimple-container" parameter as done above
+        $callback = function () use (
+            $pimple,
             $name,
             $shared_alias,
             $shared_service
         ) {
-            $service = $c->offsetGet($name);
+            $service = $pimple->offsetGet($name);
             if ($shared_alias === false && is_object($service)) {
                 return $shared_service ? clone $service : $service;
             }
             return $service;
         };
 
-        $pimple[$alias] = $shared_alias === true ? $closure : $pimple->factory($closure);
+        $pimple[$alias] = $shared_alias === true ? $callback : $pimple->factory($callback);
     }
 
     /**
