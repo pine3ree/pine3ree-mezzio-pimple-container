@@ -83,11 +83,11 @@ The `dependencies` array can contain the following keys:
   another alias).
 
 - `delegators`: an associative array that maps service names to lists of
-  delegator factory classes. Delegator factories are commonly used to customize
-  and/or decorate the original service.
+  delegator factory classes or callables. Delegator factories are commonly used
+  to customize and/or decorate the original service.
 
 - `extensions`: an associative array that maps service names to lists of
-  extension factory classes, see the [the section below](#extensions).
+  extension factory classes or callables, see the [the section below](#extensions).
 
 - `shared`: associative array that map a service name to a boolean, in order to
   indicate the container if it should cache or not a service created
