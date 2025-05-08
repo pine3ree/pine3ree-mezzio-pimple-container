@@ -5,7 +5,7 @@
 This package provides a factory for Pimple\Psr11\Container instances to be used
 in Mezzio applications
 
-It is actually a fork of the abandoned library [laminas-pimple-config](https://github.com/laminas/laminas-pimple-config)
+It is actually based on the abandoned library [laminas-pimple-config](https://github.com/laminas/laminas-pimple-config)
 modified in order to use a single pimple-psr-container. Most of the following
 text is taken from it.
 
@@ -32,8 +32,8 @@ $dependencies = [
     'invokables'        => [], // Simple constructor-less classes
     'factories'         => [], // Callable factories or callable factory classes for complex objects
     'aliases'           => [], // Aliases for other services
-    'delegators'        => [], // Delegator factories (callables or classes)
-    'extensions'        => [], // Pimple-like extension factories
+    'delegators'        => [], // Delegator factories (callables or classes indexed by sevice-id/class-string)
+    'extensions'        => [], // Pimple-like extension factories (callables or classes indexed by sevice-id/class-string)
     'shared'            => [], // Per-class overrides of the default sharing mode
     'shared_by_default' => true, // Optional, defaults to TRUE if omitted
 ];
@@ -53,8 +53,8 @@ $config = [
         'invokables'        => [], // Simple constructor-less classes
         'factories'         => [], // Callable factories or callable factory classes for complex objects
         'aliases'           => [], // Aliases for other services
-        'delegators'        => [], // Delegator factories (callables or classes)
-        'extensions'        => [], // Pimple-like extension factories
+        'delegators'        => [], // Delegator factories (callables or classes indexed by sevice-id/class-string)
+        'extensions'        => [], // Pimple-like extension factories (callables or classes indexed by sevice-id/class-string)
         'shared'            => [], // Per-class overrides of the default sharing mode
         'shared_by_default' => true, // Defaults to `true` if omitted
     ],
@@ -67,7 +67,8 @@ $container = $factory($config['dependencies'], $config);
 
 The `dependencies` array can contain the following keys:
 
-- `services`: an associative array that maps a key to a specific service instance.
+- `services`: an associative array that maps a key to a specific service instance
+  (or pimple parameter value)
 
 - `invokables`: an associative array that map a key to a constructor-less
   service class; i.e., for services that do not require arguments to the
@@ -82,11 +83,11 @@ The `dependencies` array can contain the following keys:
   another alias).
 
 - `delegators`: an associative array that maps service names to lists of
-  delegator factory classes. Delegator factories are commonly used to customize
-  and/or decorate the original service.
+  delegator factory classes or callables. Delegator factories are commonly used
+  to customize and/or decorate the original service.
 
 - `extensions`: an associative array that maps service names to lists of
-  extension factory classes, see the [the section below](#extensions).
+  extension factory classes or callables, see the [the section below](#extensions).
 
 - `shared`: associative array that map a service name to a boolean, in order to
   indicate the container if it should cache or not a service created
