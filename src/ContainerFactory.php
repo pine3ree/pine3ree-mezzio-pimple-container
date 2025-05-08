@@ -81,7 +81,7 @@ class ContainerFactory
                 if (is_callable($service)) {
                     $pimple[$name] = $pimple->protect($service);
                 } elseif ($this->isShared($name, $dependencies)) {
-                    $pimple[$name] = $service;
+                    $pimple[$name] = fn() => $service;
                 } else {
                     $pimple[$name] = $pimple->factory(fn() => clone $service);
                 }
